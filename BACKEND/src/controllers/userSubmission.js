@@ -55,11 +55,18 @@ const submitCode = async (req, res) => {
  
         const languageId = getLanguageById(language);
  
+        // Find wrapper code for the selected language
+        const wrapperObj = problem.wrapperCode?.find(w => normaliseLanguage(w.language) === language);
+        let finalCode = code;
+        if (wrapperObj && wrapperObj.code && wrapperObj.code.includes('// USER_CODE_HERE')) {
+            finalCode = wrapperObj.code.replace('// USER_CODE_HERE', code);
+        }
+
         // Save a pending submission immediately so we have a record even if Judge0 is slow
         const submission = await Submission.create({
             userId,
             problemId,
-            code,
+            code, // save the original code, not the wrapped code
             language,
             testCasesPassed: 0,
             status: 'pending',
@@ -67,7 +74,7 @@ const submitCode = async (req, res) => {
         });
  
         const submissions = problem.hiddenTestCases.map((tc) => ({
-            source_code: code,
+            source_code: finalCode,
             language_id: languageId,
             stdin: tc.input,
             expected_output: tc.output
@@ -125,8 +132,15 @@ const runCode = async (req, res) => {
  
         const languageId = getLanguageById(language);
  
+        // Find wrapper code for the selected language
+        const wrapperObj = problem.wrapperCode?.find(w => normaliseLanguage(w.language) === language);
+        let finalCode = code;
+        if (wrapperObj && wrapperObj.code && wrapperObj.code.includes('// USER_CODE_HERE')) {
+            finalCode = wrapperObj.code.replace('// USER_CODE_HERE', code);
+        }
+
         const submissions = problem.visibleTestCases.map((tc) => ({
-            source_code: code,
+            source_code: finalCode,
             language_id: languageId,
             stdin: tc.input,
             expected_output: tc.output

@@ -47,6 +47,13 @@ const problemSchema = new Schema({
         }
     ],
 
+    wrapperCode: [
+        {
+            language: { type: String, required: true },
+            code: { type: String, required: true }
+        }
+    ],
+
     problemCreator: {
         type: Schema.Types.ObjectId,
         ref: 'user',

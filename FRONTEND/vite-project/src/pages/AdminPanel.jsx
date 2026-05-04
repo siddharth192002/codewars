@@ -37,10 +37,16 @@ const problemSchema = z.object({
   ).length(3),
   referenceSolution: z.array(
     z.object({
-      language: z.enum(['c++', 'java', 'javascript']),  // lowercase
+      language: z.enum(['c++', 'java', 'javascript']),
       completeCode: z.string().min(1, 'Complete code is required')
     })
-  ).length(3)
+  ).length(3),
+  wrapperCode: z.array(
+    z.object({
+      language: z.enum(['c++', 'java', 'javascript']),
+      code: z.string()
+    })
+  ).optional()
 });
 
 export default function AdminPanel() {
@@ -53,18 +59,23 @@ export default function AdminPanel() {
       title: '',
       description: '',
       difficulty: 'easy',
-      tags: ['array'],  // array, not a single string
+      tags: ['array'],
       visibleTestCases: [{ input: '', output: '', explanation: '' }],
       hiddenTestCases: [{ input: '', output: '' }],
       starterCode: [
-        { language: 'c++', initialCode: '' },    // lowercase
+        { language: 'c++', initialCode: '' },
         { language: 'java', initialCode: '' },
         { language: 'javascript', initialCode: '' }
       ],
       referenceSolution: [
-        { language: 'c++', completeCode: '' },   // lowercase
+        { language: 'c++', completeCode: '' },
         { language: 'java', completeCode: '' },
         { language: 'javascript', completeCode: '' }
+      ],
+      wrapperCode: [
+        { language: 'c++', code: '#include <iostream>\nusing namespace std;\n\n// USER_CODE_HERE\n\nint main() {\n    // Read input and call user function\n    return 0;\n}' },
+        { language: 'java', code: 'import java.util.*;\n\npublic class Main {\n    // USER_CODE_HERE\n\n    public static void main(String[] args) {\n        // Read input and call user function\n    }\n}' },
+        { language: 'javascript', code: 'const fs = require("fs");\nconst input = fs.readFileSync("/dev/stdin", "utf-8").trim().split("\\n");\n\n// USER_CODE_HERE\n\n// Call user function and console.log result' }
       ]
     }
   });
@@ -78,7 +89,13 @@ export default function AdminPanel() {
   const onSubmit = async (data) => {
     try {
       setSubmitStatus('submitting');
-      await axiosClient.post('/problem/create', data);
+      // If all wrapper code entries are empty, remove the field so backend auto-generates
+      const filledWrappers = (data.wrapperCode || []).filter(w => w.code && w.code.trim());
+      const payload = {
+        ...data,
+        wrapperCode: filledWrappers.length > 0 ? filledWrappers : undefined
+      };
+      await axiosClient.post('/problem/create', payload);
       setSubmitStatus('success');
       setTimeout(() => navigate('/admin'), 700);  // back to admin dashboard, not homepage
     } catch (error) {
@@ -235,6 +252,31 @@ export default function AdminPanel() {
                   />
                   {errors.referenceSolution?.[index]?.completeCode && (
                     <p className="text-error text-sm mt-1">{errors.referenceSolution[index].completeCode.message}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* WRAPPER CODE (Optional) */}
+          <div className={formCardClasses}>
+            <h2 className="text-xl font-semibold mb-4">Wrapper Code <span className="badge badge-sm badge-ghost ml-2">Optional</span></h2>
+            <p className="text-sm opacity-70 mb-4">
+              Leave these empty to <strong>auto-generate</strong> wrapper code from the starter code above.
+              Or manually define wrappers using <strong>// USER_CODE_HERE</strong> where the user's function should be injected.
+            </p>
+            <div className="space-y-4">
+              {LANGUAGES.map((lang, index) => (
+                <div key={lang}>
+                  <label className="block mb-1 font-medium">{LANGUAGE_LABELS[lang]}</label>
+                  <textarea
+                    {...register(`wrapperCode.${index}.code`)}
+                    rows={8}
+                    className="textarea textarea-bordered w-full font-mono text-sm bg-base-200"
+                    placeholder={`// ${LANGUAGE_LABELS[lang]} wrapper code`}
+                  />
+                  {errors.wrapperCode?.[index]?.code && (
+                    <p className="text-error text-sm mt-1">{errors.wrapperCode[index].code.message}</p>
                   )}
                 </div>
               ))}

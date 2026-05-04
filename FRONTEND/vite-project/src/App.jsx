@@ -8,7 +8,7 @@ import AdminPanel from "./pages/AdminPanel";
 import SubmissionPage from "./pages/SubmissionPage";
 import HomePage from "./pages/Homepage";
 import ProblemPage from "./pages/ProblemPage";
-// import EditProblem from "./pages/EditProblem"; // create this page for /admin/edit/:id
+import EditProblem from "./pages/EditProblem";
 
 import { checkUser } from "./authSlice";
 import { useDispatch, useSelector } from "react-redux";
@@ -48,9 +48,8 @@ function App() {
       <Route path="/admin/create"      element={isAdmin ? <AdminPanel />       : <Navigate to="/" />} />
       <Route path="/admin/edit-list"   element={isAdmin ? <EditProblemList />  : <Navigate to="/" />} />
       <Route path="/admin/delete-list" element={isAdmin ? <DeleteProblemList />: <Navigate to="/" />} />
+      <Route path="/admin/edit/:id"    element={isAdmin ? <EditProblem />      : <Navigate to="/" />} />
 
-      {/* TODO: create EditProblem.jsx that fetches problem by id and pre-fills AdminPanel form */}
-      {/* <Route path="/admin/edit/:id" element={isAdmin ? <EditProblem /> : <Navigate to="/" />} /> */}
     </Routes>
   );
 }

@@ -32,15 +32,120 @@ const validateReferenceSolutions = async (referenceSolution, visibleTestCases) =
     }
 };
 
+/**
+ * Auto-generate wrapper code from starter code.
+ * Parses the function name from JS/Java/C++ starter templates and builds
+ * stdin → function → stdout wrappers so Judge0 can execute them.
+ */
+const generateWrapperCode = (starterCode) => {
+    const wrappers = [];
+
+    for (const sc of starterCode) {
+        const lang = sc.language.toLowerCase();
+        const code = sc.initialCode || '';
+
+        if (lang === 'javascript' || lang === 'js') {
+            // Match: var funcName = function(...)  OR  function funcName(...)
+            const match = code.match(/(?:var|let|const)\s+(\w+)\s*=\s*function/) ||
+                          code.match(/function\s+(\w+)\s*\(/);
+            const funcName = match ? match[1] : 'solve';
+
+            wrappers.push({
+                language: 'javascript',
+                code: `const readline = require('readline');
+const rl = readline.createInterface({ input: process.stdin });
+let lines = [];
+rl.on('line', l => lines.push(l));
+rl.on('close', () => {
+    const s = lines[0] || "";
+
+    // USER_CODE_HERE
+
+    console.log(${funcName}(s));
+});`
+            });
+        }
+
+        if (lang === 'java') {
+            // Match: public TYPE funcName(
+            const match = code.match(/public\s+\w+\s+(\w+)\s*\(/);
+            const funcName = match ? match[1] : 'solve';
+            // Detect return type for bool handling
+            const retMatch = code.match(/public\s+(\w+)\s+\w+\s*\(/);
+            const retType = retMatch ? retMatch[1] : 'int';
+
+            wrappers.push({
+                language: 'java',
+                code: `import java.util.*;
+import java.io.*;
+
+// USER_CODE_HERE
+
+public class Main {
+    public static void main(String[] args) throws IOException {
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        String s = br.readLine();
+        if (s == null) s = "";
+        Solution sol = new Solution();
+        System.out.print(sol.${funcName}(s));
+    }
+}`
+            });
+        }
+
+        if (lang === 'c++' || lang === 'cpp') {
+            // Match: TYPE funcName(
+            const match = code.match(/(?:int|bool|string|void|double|float|long)\s+(\w+)\s*\(/);
+            const funcName = match ? match[1] : 'solve';
+            const retMatch = code.match(/(int|bool|string|void|double|float|long)\s+\w+\s*\(/);
+            const retType = retMatch ? retMatch[1] : 'int';
+
+            const printExpr = retType === 'bool'
+                ? `cout << (sol.${funcName}(s) ? "true" : "false");`
+                : `cout << sol.${funcName}(s);`;
+
+            wrappers.push({
+                language: 'c++',
+                code: `#include <iostream>
+#include <string>
+#include <unordered_map>
+#include <algorithm>
+#include <cctype>
+using namespace std;
+
+// USER_CODE_HERE
+
+int main() {
+    string s;
+    getline(cin, s);
+    Solution sol;
+    ${printExpr}
+    return 0;
+}`
+            });
+        }
+    }
+
+    return wrappers;
+};
+
 // ─── Create Problem ──────────────────────────────────────────────────────────
 const CreateProblem = async (req, res) => {
     try {
-        const { referenceSolution, visibleTestCases } = req.body;
+        const { referenceSolution, visibleTestCases, starterCode, wrapperCode } = req.body;
 
         await validateReferenceSolutions(referenceSolution, visibleTestCases);
 
+        // Auto-generate wrapper code if not provided or empty
+        let finalWrapperCode = wrapperCode;
+        if (!finalWrapperCode || finalWrapperCode.length === 0) {
+            finalWrapperCode = generateWrapperCode(starterCode || []);
+            console.log(`Auto-generated wrapper code for ${finalWrapperCode.length} languages`);
+        }
+
         const userProblem = await Problem.create({
             ...req.body,
+            wrapperCode: finalWrapperCode,
             problemCreator: req.result._id
         });
 

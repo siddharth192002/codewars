@@ -17,6 +17,8 @@ const ProblemPage = () => {
   const [submitError,      setSubmitError]      = useState(null);
   const [activeLeftTab,    setActiveLeftTab]    = useState('description');
   const [activeRightTab,   setActiveRightTab]   = useState('code');
+  const [submissionsList,  setSubmissionsList]  = useState([]);
+  const [submissionsLoading, setSubmissionsLoading] = useState(false);
 
   const editorRef = useRef(null);
   const { problemId } = useParams();
@@ -82,6 +84,25 @@ const ProblemPage = () => {
     };
     fetchProblem();
   }, [problemId]);
+
+  // ── Fetch Submissions ──────────────────────────────────────────────────────
+  useEffect(() => {
+    if (activeLeftTab === 'submissions' && problemId) {
+      const fetchSubmissions = async () => {
+        setSubmissionsLoading(true);
+        try {
+          const { data } = await axiosClient.get(`/problem/submittedProblem/${problemId}`);
+          setSubmissionsList(Array.isArray(data) ? data : data.submissions || []);
+        } catch (err) {
+          console.error('Failed to fetch submissions:', err);
+          setSubmissionsList([]);
+        } finally {
+          setSubmissionsLoading(false);
+        }
+      };
+      fetchSubmissions();
+    }
+  }, [activeLeftTab, problemId]);
 
   // ── Language change ────────────────────────────────────────────────────────
   const handleLanguageChange = (lang) => {
@@ -262,7 +283,83 @@ const ProblemPage = () => {
               </div>
             )}
 
-            {activeLeftTab !== 'description' && (
+            {!pageLoading && activeLeftTab === 'solutions' && problem && (
+              <div>
+                <h3 className="font-bold text-lg mb-4">Reference Solutions</h3>
+                {problem.referenceSolution?.length > 0 ? (
+                  <div className="space-y-6">
+                    {problem.referenceSolution.map((sol, idx) => (
+                      <div key={idx} className="bg-base-300 rounded-lg overflow-hidden">
+                        <div className="bg-base-200 px-4 py-2 font-mono text-sm font-semibold border-b border-base-300">
+                          {sol.language.toUpperCase()}
+                        </div>
+                        <div className="p-4 overflow-x-auto">
+                          <pre className="font-mono text-sm text-base-content/80 whitespace-pre-wrap">
+                            {sol.completeCode}
+                          </pre>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center mt-10 text-base-content/50">
+                    No solutions available for this problem.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!pageLoading && activeLeftTab === 'submissions' && (
+              <div>
+                <h3 className="font-bold text-xl mb-6 text-center">Submission History</h3>
+                {submissionsLoading ? (
+                  <div className="flex justify-center mt-10">
+                    <span className="loading loading-spinner loading-lg"></span>
+                  </div>
+                ) : submissionsList.length === 0 ? (
+                  <div className="text-center mt-10 text-base-content/50">
+                    No submissions found for this problem.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="table table-zebra w-full text-sm">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>Language</th>
+                          <th>Status</th>
+                          <th>Runtime</th>
+                          <th>Memory</th>
+                          <th>Test Cases</th>
+                          <th>Submit Time</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {submissionsList.map((sub, idx) => (
+                          <tr key={sub._id}>
+                            <td>{submissionsList.length - idx}</td>
+                            <td>{sub.language}</td>
+                            <td>
+                              <span className={`badge badge-sm font-semibold ${sub.status === 'accepted' ? 'badge-success' : 'badge-error'}`}>
+                                {sub.status.charAt(0).toUpperCase() + sub.status.slice(1)}
+                              </span>
+                            </td>
+                            <td>{sub.runtime ? `${sub.runtime.toFixed(3)} sec` : 'N/A'}</td>
+                            <td>{sub.memory ? `${sub.memory} KB` : 'N/A'}</td>
+                            <td>{sub.testCasesPassed}/{sub.testCasesTotal}</td>
+                            <td className="text-xs opacity-70">
+                              {new Date(sub.createdAt).toLocaleString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!['description', 'solutions', 'submissions'].includes(activeLeftTab) && (
               <div className="text-base-content/40 text-center mt-20 text-sm">
                 {activeLeftTab.charAt(0).toUpperCase() + activeLeftTab.slice(1)} coming soon...
               </div>

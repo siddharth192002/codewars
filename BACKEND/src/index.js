@@ -19,7 +19,11 @@ app.use(helmet());  // sets secure HTTP headers (XSS, HSTS, no-sniff, etc.)
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-    origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',  // set CLIENT_ORIGIN in .env for production
+    origin: function (origin, callback) {
+        // allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        return callback(null, true); // Allow all origins for dev
+    },
     credentials: true
 }));
 
