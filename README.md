@@ -78,8 +78,7 @@ Run the frontend:
 npm run dev
 ```
 
-## 📸 Screenshots
-*(Add screenshots here)*
+
 
 ## 🛡️ Security Features
 - **JWT Authentication**: Secure token-based auth with HTTP-only cookies to prevent XSS.
