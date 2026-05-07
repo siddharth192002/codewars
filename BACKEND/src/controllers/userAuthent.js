@@ -6,8 +6,8 @@ const jwt = require('jsonwebtoken');
 
 const COOKIE_OPTIONS = {
     httpOnly: true,   // not accessible via JS — blocks XSS token theft
-    secure: process.env.NODE_ENV === 'production', // HTTPS only in prod
-    sameSite: 'strict',
+    secure: false,    // set to true only if using HTTPS
+    sameSite: 'lax',
     maxAge: 24 * 60 * 60 * 1000 // 24 hours in ms
 };
 
