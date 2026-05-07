@@ -2,6 +2,9 @@
 
 CodeArena is a comprehensive platform for developers to practice coding problems, run their code in real-time, and track their performance. It features a robust code execution engine, a full-featured admin panel, and high-performance caching for a seamless user experience.
 
+### 🌐 [Live Demo](http://15.206.67.86/)
+
+
 ## 🚀 Features
 
 - **Professional Code Editor**: Integrated with **Monaco Editor** for a VS Code-like coding experience.
