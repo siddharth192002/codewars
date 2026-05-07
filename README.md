@@ -1,4 +1,4 @@
-# CodeArena - A Full-Stack LeetCode Clone
+# CodeThrone - A Full-Stack LeetCode Clone
 
 CodeArena is a comprehensive platform for developers to practice coding problems, run their code in real-time, and track their performance. It features a robust code execution engine, a full-featured admin panel, and high-performance caching for a seamless user experience.
 
